@@ -16,13 +16,23 @@ function Error($Message) {
 }
 
 function ThrowDetailedException($Exception) {
-	$Exception | format-list -force | Out-String|% {Write-Host $_ -f Red}
+	$Exception | format-list -force | Out-String | ForEach-Object {Write-Host $_ -f Red}
 }
 
 # Check if the script is being run in admin mode, if not exit the program
 function CheckAdmin {
 	if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 		Error "This script must be run in admin mode. Please open PowerShell in admin mode and rerun."
+		exit
+	}
+}
+
+# Check .NET version
+function CheckDotNetVersion {
+	param ([Parameter(Position=1, Mandatory=$true)] [double]$Version)
+	$DotNetVersion = Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP' -recurse | Get-ItemProperty -name Version,Release -EA 0 | Where-Object {$_.PSChildName -eq "v$Version"} | Select-Object PSChildName
+	if (-not ($DotNetVersion)) {
+		Error "This script requires that .NET version $Version be installed. Please install .NET version $Version and rerun."
 		exit
 	}
 }
@@ -142,6 +152,32 @@ function DeployDatabase {
 	Log $cmd
 	Invoke-Expression $cmd
 	Log "Deployment complete. $TargetDatabaseName deployed successfully."
+}
+
+# Deploy a given database to a server
+function DeployDatabaseFromProfile {
+	param(
+		[string]$SqlPackage,
+		[string]$DacpacPath,
+		[string]$ProfilePath,
+		[string]$Server = "localhost",
+		[string]$InstanceName = "")
+	
+	# Validate parameters
+	if(-Not (Test-Path -Path $SqlPackage)) { Throw [System.IO.FileNotFoundException] "Cannot find sqlpackage.exe at $SqlPackage." }
+	if(-Not (Test-Path -Path $DacpacPath)) { Throw [System.IO.FileNotFoundException] "Cannot find dacpac at $DacpacPath. Make sure the package was built successfully." }
+	if(-Not (Test-Path -Path $ProfilePath)) { Throw [System.IO.FileNotFoundException] "Cannot find profile at $ProfilePath. Make sure the profile exists." }
+	else { $DacpacPath = Resolve-Path -Path $DacpacPath }
+
+	if($InstanceName) {
+		$Server = "$Server\$Instance"
+	}
+	
+	Log "Deploying database from $ProfilePath using $DacpacPath..."
+	$cmd = "& '$SqlPackage' /Action:Publish /SourceFile:'$DacpacPath' /Profile:'$ProfilePath' /TargetServerName:'$Server'"
+	Log $cmd
+	Invoke-Expression $cmd
+	Log "Deployment complete. Database from $ProfilePath deployed successfully."
 }
 
 # Drop a database from a server
@@ -346,6 +382,30 @@ function StartSqlAgent {
             Error $message
         }
     }
+}
+
+function CreateLocalDBInstance {
+	param (
+		[string] $InstanceName
+	)
+	Log "Creating localdb instance $InstanceName"
+	sqllocaldb create $InstanceName -s
+	Log "Successfully created localdb instance $InstanceName"
+	sqllocaldb info $InstanceName | format-list | Out-String | ForEach-Object {Write-Host $_ -f cyan}
+}
+
+function RemoveLocalDBInstance {
+	param (
+		[string] $InstanceName
+	)
+	Log "Stopping localdb instance $InstanceName"
+	sqllocaldb stop $InstanceName -k
+	Log "Deleting localdb instance $InstanceName"
+	sqllocaldb delete $InstanceName
+	Log "Cleaning up files from localdb instance $InstanceName"
+	$cleanupPath = "$env:USERPROFILE\AppData\Local\Microsoft\Microsoft SQL Server Local DB\Instances\$InstanceName"
+	remove-item $cleanupPath -Recurse -Force
+	Log "Successfully removed localdb instance $InstanceName"
 }
 
 function BuildBiml {
