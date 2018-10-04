@@ -1,0 +1,20 @@
+#User specific aliases
+
+alias chrome="google-chrome --incognito &"
+alias home="cd ~"
+alias hm=home
+alias hoem=home
+alias c="clear"
+alias lsa="ls -a"
+alias lla="ll -a"
+alias vi=vim
+alias ff="find .-name $1"
+alias cd..="cd .."
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
+
+# User specific environment and startup programs
+
+export PATH=/usr/local/bin:$PATH
