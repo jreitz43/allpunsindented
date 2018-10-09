@@ -1,0 +1,29 @@
+#User specific aliases
+
+alias chrome="google-chrome --incognito &"
+alias sublime="sublime_text &"
+alias home="cd ~"
+alias hm=home
+alias hoem=home
+alias c="clear"
+alias lsa="ls -a"
+alias ll="ls -lhA"
+alias lla="ll -a"
+alias mkdir="mkdir -pv"
+alias vi=vim
+alias ff="find .-name $1"
+alias grep="grep --color=auto"
+alias rm="rm -i"
+alias h="history"
+alias root="sudo -i"
+alias su="sudo -i"
+sudo wget="wget -c"
+alias cd..="cd .."
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
+
+# User specific environment and startup programs
+
+export PATH=/usr/local/bin:$PATH
