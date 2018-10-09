@@ -470,3 +470,35 @@ function BuildBiml {
 		Log "No Error reported. BIML build successful."
 	}
 }
+
+#Convert excel tabs into individual csv's
+
+function ConvertExceltoCSV {
+
+param (
+   [Parameter(Position=1,Mandatory=$true)] [string]$InputFolderPath,
+   [Parameter(Position=2,Mandatory=$true)] [string]$OrigFileName,
+   [Parameter(Position=3,Mandatory=$false)] [array]$TabNames)
+
+    #Create and get Excel Obj
+    $excel = New-Object -comobject Excel.Application;
+    $excel.visible=$false;
+    $excel.DisplayAlerts=$false;
+    $WorkbookPath = $InputFolderPath + "\" + $OrigFileName
+    $WorkBook = $excel.Workbooks.Open($WorkbookPath);
+    $output_type = ".csv";
+    $xlCSV = 6;
+
+    # Validate that the file exists
+    if(-Not (Test-Path -Path $WorkbookPath)) { Throw [System.IO.FileNotFoundException] "Cannot find $OrigFileName in $InputFolderPath." }
+
+    foreach($ws in $Workbook.Worksheets) {
+        if((-not $TabNames) -or ($TabNames -and ($TabNames -contains $ws.Name))) {
+            Write-Host "Creating csv for" $ws.name
+            $UnprotectSheet = $ws.Unprotect()
+            $ws.SaveAs($InputFolderPath + "\" + $ws.Name + $output_type, $xlCSV);
+        }
+    }
+    $Workbook.close()
+    $excel.quit()
+}
