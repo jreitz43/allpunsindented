@@ -1,6 +1,6 @@
 $ProgramFilesPath = "C:\Program Files (x86)"
 $global:VSVersion = "14.0"
-# Set the Error action so that all error cause the script to fail
+# Set the Error action so that all errors cause the script to fail
 $ErrorActionPreference = "Stop"
 
 function Log($Message) {
@@ -109,7 +109,7 @@ function ImportSqlServerAssemblies {
 # Get a Sql connection string to a server
 function GetSqlConnectionString {
     param(
-        [string]$ServerName
+        [Parameter(Position=1, Mandatory=$true)] [string]$ServerName
     )
     return "Data Source=$ServerName;Initial Catalog=msdb;Integrated Security=SSPI;"
 }
@@ -117,7 +117,7 @@ function GetSqlConnectionString {
 # Get a Sql connection from a server name
 function GetSqlConnection {
     param(
-        [string]$ServerName
+        [Parameter(Position=1, Mandatory=$true)] [string]$ServerName
     )
     $SqlConnectionString = GetSqlConnectionString -ServerName $ServerName
     return New-Object System.Data.SqlClient.SqlConnection $SqlConnectionString
@@ -126,16 +126,16 @@ function GetSqlConnection {
 # Deploy a given database to a server
 function DeployDatabase {
 	param(
-		[string]$SqlPackage,
-		[string]$DacpacPath,
-		[string]$Server = "localhost",
-		[string]$TargetDatabaseName,
-        [bool]$CreateNewDatabase = $false,
-        [bool]$BlockOnPossibleDataLoss = $false,
-        [bool]$DropObjectNotInSource = $true,
-        [bool]$GenerateSmartDefaults = $true,
-        [bool]$IncludeTransactionalScripts = $true,
-		[string]$Variables = "")
+		[Parameter(Position=1, Mandatory=$true)] [string]$SqlPackage,
+		[Parameter(Position=2, Mandatory=$true)] [string]$DacpacPath,
+		[Parameter(Position=3, Mandatory=$false)] [string]$Server = "localhost",
+		[Parameter(Position=4, Mandatory=$false)] [string]$TargetDatabaseName,
+        [Parameter(Position=5, Mandatory=$false)] [bool]$CreateNewDatabase = $false,
+        [Parameter(Position=6, Mandatory=$false)] [bool]$BlockOnPossibleDataLoss = $false,
+        [Parameter(Position=7, Mandatory=$false)] [bool]$DropObjectNotInSource = $true,
+        [Parameter(Position=8, Mandatory=$false)] [bool]$GenerateSmartDefaults = $true,
+        [Parameter(Position=9, Mandatory=$false)] [bool]$IncludeTransactionalScripts = $true,
+		[Parameter(Position=10, Mandatory=$false)] [string]$Variables)
 	
 	# Validate parameters
 	if(-Not (Test-Path -Path $SqlPackage)) { Throw [System.IO.FileNotFoundException] "Cannot find sqlpackage.exe at $SqlPackage." }
@@ -157,11 +157,11 @@ function DeployDatabase {
 # Deploy a given database to a server
 function DeployDatabaseFromProfile {
 	param(
-		[string]$SqlPackage,
-		[string]$DacpacPath,
-		[string]$ProfilePath,
-		[string]$Server = "localhost",
-		[string]$InstanceName = "")
+		[Parameter(Position=1, Mandatory=$true)] [string]$SqlPackage,
+		[Parameter(Position=2, Mandatory=$true)] [string]$DacpacPath,
+		[Parameter(Position=3, Mandatory=$true)] [string]$ProfilePath,
+		[Parameter(Position=4, Mandatory=$false)] [string]$Server = "localhost",
+		[Parameter(Position=5, Mandatory=$false)] [string]$InstanceName)
 	
 	# Validate parameters
 	if(-Not (Test-Path -Path $SqlPackage)) { Throw [System.IO.FileNotFoundException] "Cannot find sqlpackage.exe at $SqlPackage." }
@@ -183,8 +183,8 @@ function DeployDatabaseFromProfile {
 # Drop a database from a server
 function DropDatabase {
 	param(
-		[string]$ServerName,
-        [string]$DatabaseName
+		[Parameter(Position=1, Mandatory=$true)] [string]$ServerName,
+        [Parameter(Position=2, Mandatory=$true)] [string]$DatabaseName
     )
     Log "Dropping $DatabaseName from $ServerName..."
 	
@@ -203,9 +203,9 @@ function DropDatabase {
 # Restore a database from a file to a server
 function RestoreDatabase {
 	param(
-		[string]$ServerName,
-        [string]$DatabaseName,
-        [string]$BackupPath
+		[Parameter(Position=1, Mandatory=$true)] [string]$ServerName,
+        [Parameter(Position=2, Mandatory=$true)] [string]$DatabaseName,
+        [Parameter(Position=3, Mandatory=$true)] [string]$BackupPath
     )
     Log "Restoring $DatabaseName to $ServerName..."
 	
@@ -276,12 +276,13 @@ function RestoreDatabase {
 
 # Deploy an SSIS package to the SSIS catalog
 function DeploySsis {
-	param(	[string]$IspacFilePath,
-			[string]$IsFolder,
-			[string]$ProjectName,
-			[string]$ServerName,
-			[string]$SsisCatalog = "SSISDB",
-			[string]$CatalogPwd = "P@ssw0rd1"
+	param(	
+		[Parameter(Position=1, Mandatory=$true)] [string]$IspacFilePath,
+		[Parameter(Position=2, Mandatory=$true)] [string]$IsFolder,
+		[Parameter(Position=3, Mandatory=$true)] [string]$ProjectName,
+		[Parameter(Position=4, Mandatory=$true)] [string]$ServerName,
+		[Parameter(Position=5, Mandatory=$false)] [string]$SsisCatalog = "SSISDB",
+		[Parameter(Position=6, Mandatory=$false)] [string]$CatalogPwd = "P@ssw0rd1"
 	)
 	
 	$ssisNamespace = "Microsoft.SqlServer.Management.IntegrationServices"
@@ -337,8 +338,8 @@ function DeploySsis {
 # Execute a Sql Agent job on a given server
 function ExecuteJob {
 	param (
-		[string] $JobName,
-		[string] $ServerName
+		[Parameter(Position=1, Mandatory=$true)] [string]$JobName,
+		[Parameter(Position=2, Mandatory=$true)] [string]$ServerName
 	)
 	$sqlConnection = new-object System.Data.SqlClient.SqlConnection 
 	$sqlConnection.ConnectionString = GetSqlConnectionString -ServerName $ServerName
@@ -356,7 +357,7 @@ function ExecuteJob {
 # Start the SqlAgent of a given server
 function StartSqlAgent {
 	param (
-		[string] $ServerName
+		[Parameter(Position=1, Mandatory=$true)] [string]$ServerName
 	)
 	Log "Starting SQL Server Agent..."
 	try {
@@ -386,7 +387,7 @@ function StartSqlAgent {
 
 function CreateLocalDBInstance {
 	param (
-		[string] $InstanceName
+		[Parameter(Position=1, Mandatory=$true)] [string]$InstanceName
 	)
 	Log "Creating localdb instance $InstanceName"
 	sqllocaldb create $InstanceName -s
@@ -396,7 +397,7 @@ function CreateLocalDBInstance {
 
 function RemoveLocalDBInstance {
 	param (
-		[string] $InstanceName
+		[Parameter(Position=1, Mandatory=$true)] [string]$InstanceName
 	)
 	Log "Stopping localdb instance $InstanceName"
 	sqllocaldb stop $InstanceName -k
@@ -410,10 +411,10 @@ function RemoveLocalDBInstance {
 
 function BuildBiml {
 	param(
-		 [Parameter(Position=1, Mandatory=$true)] [string]$ProjectFile
-		,[Parameter(Position=2, Mandatory=$true)] [string]$Options
-		,[Parameter(Position=3, Mandatory=$false)] [string]$BimlBuildPath
-		,[Parameter(Position=4, Mandatory=$false)] [string]$MsBuildPath
+		[Parameter(Position=1, Mandatory=$true)] [string]$ProjectFile,
+		[Parameter(Position=2, Mandatory=$true)] [string]$Options,
+		[Parameter(Position=3, Mandatory=$false)] [string]$BimlBuildPath,
+		[Parameter(Position=4, Mandatory=$false)] [string]$MsBuildPath
 	)	
 	
 	$ProjectRoot = (Get-Item (Split-Path -Path $ProjectFile)).FullName
