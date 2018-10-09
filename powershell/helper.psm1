@@ -170,7 +170,7 @@ function DeployDatabaseFromProfile {
 	else { $DacpacPath = Resolve-Path -Path $DacpacPath }
 
 	if($InstanceName) {
-		$Server = "$Server\$Instance"
+		$Server = "$Server\$InstanceName"
 	}
 	
 	Log "Deploying database from $ProfilePath using $DacpacPath..."
